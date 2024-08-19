@@ -1,0 +1,69 @@
+local function mainScript()
+    local Remote = game:GetService("ReplicatedStorage"):WaitForChild("CSS_Events"):WaitForChild("CarDestroyer")
+    local HttpRequest = (syn and syn.request) or request
+    local HttpService = game:GetService("HttpService")
+    local TeleportService = game:GetService("TeleportService")
+    local Players = game:GetService("Players")
+    local PlaceId = game.PlaceId
+    local JobId = game.JobId
+
+    _G.Jodiendo = true
+
+    local function serverHop()
+        while _G.Jodiendo do
+            task.wait(2)
+            if HttpRequest then
+                local servers = {}
+                local req = HttpRequest({Url = string.format("https://games.roblox.com/v1/games/%d/servers/Public?sortOrder=Desc&limit=100&excludeFullGames=true", PlaceId)})
+                local body = HttpService:JSONDecode(req.Body)
+
+                if body and body.data then
+                    for i, v in next, body.data do
+                        if type(v) == "table" and tonumber(v.playing) and tonumber(v.maxPlayers) and v.playing < v.maxPlayers and v.id ~= JobId then
+                            table.insert(servers, 1, v.id)
+                        end
+                    end
+                end
+
+                if #servers > 0 then
+                    queue_on_teleport("loadstring(game:HttpGet(''))()")
+                    
+                    TeleportService:TeleportToPlaceInstance(PlaceId, servers[math.random(1, #servers)], Players.LocalPlayer)
+                    return
+                else
+                    task.wait(1)
+                end
+            else
+                Players.LocalPlayer:Kick("❌ | Exploit Incompatible: Tu exploit no soporta esta accion de syn.queue_on_teleport.")
+                break
+            end
+        end
+    end
+
+    local function mainLoop()
+        while _G.Jodiendo do
+            task.wait(0.1)
+            local players = Players:GetPlayers()
+            local playerCount = #players
+
+            if playerCount > 14 then
+                serverHop()
+            elseif playerCount == 1 and players[1].Name == Players.LocalPlayer.Name then
+                Players.LocalPlayer:Kick("✅ | Waiting")
+            else
+                for _, value in pairs(players) do
+                    if value.Name ~= Players.LocalPlayer.Name then
+                        Remote:FireServer(value)
+                    end
+                end
+            end
+        end
+    end
+
+    spawn(mainLoop)
+end
+
+local HWID = game:GetService("RbxAnalyticsService"):GetClientId()
+if HWID == "A37B4632-1514-4FF4-BF67-AA0BEFC851BD" then
+    mainScript()
+end
